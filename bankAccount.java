@@ -3,6 +3,7 @@ package bank;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.InputMismatchException;
+import java.util.Random;
 import java.util.Scanner;
 
 class Account implements Serializable {
@@ -303,8 +304,6 @@ public class bankAccount {
     }
   }
 
-  /* ========== Enhanced Admin Menu ========== */
-
   private static void adminMenu() {
     Scanner s = new Scanner(System.in);
     while (true) {
@@ -359,10 +358,6 @@ public class bankAccount {
     }
   }
 
-  /* ========== Rest of your existing methods remain unchanged ========== */
-  // [All other methods remain exactly the same as in your original code]
-  // CreateNewAccount(), DisplayAllAccount(), viewOneAcccountDetail(), etc.
-  // ...
   private static void searchAccountMenu() {
     Scanner s = new Scanner(System.in);
     System.out.println("1. Search Account by Account Number");
@@ -376,20 +371,6 @@ public class bankAccount {
       System.out.println("Invalid Input");
     }
   }
-
-  // private static void adminMenu() {
-  // Scanner s = new Scanner(System.in);
-  // System.out.println("1. View All Registered Account! ");
-  // System.out.println("2. View All Loan Histories!");
-  // int choice = s.nextInt();
-  // if (choice == 1) {
-  // DisplayAllAccount();
-  // } else if (choice == 2) {
-  // SearchAccountByName();
-  // } else {
-  // System.out.println("Invalid Input");
-  // }
-  // }
 
   private static void deleteAccountMenu() {
     Scanner s = new Scanner(System.in);
@@ -457,44 +438,67 @@ public class bankAccount {
     }
   }
 
-  // [All other methods remain exactly the same as in your original code]
-  // CreateNewAccount(), DisplayAllAccount(), viewOneAcccountDetail(), etc.
-  // ...
-
-  static void CreateNewAccount() {
-    Scanner s = new Scanner(System.in);
-    System.out.print("Enter Holder Name:");
-    String Hname = s.nextLine();
-
-    System.out.print("Enter A six Digit Account Number:");
-    int AccNo = s.nextInt();
-    String ab = String.valueOf(AccNo);
-    if (ab.length() == 6) {
-      System.out.print("Enter initial Balance:");
-      double balance = s.nextDouble();
-      if (balance >= 50) {
-        Account account = new Account(Hname, AccNo, balance);
-        Acc.add(account);
-        System.out.println("Account Created Successfully");
-      } else if (balance > 0 && balance < 50) {
-        System.out.println("Please Enter a value above 50 ETBirr");
-      } else {
-        System.out.println("Initial balance cannot be negative!");
-      }
-    } else {
-      System.out.println("Invalid format! Try Again");
-    }
-  }
-
   static void DisplayAllAccount() {
     if (Acc.isEmpty()) {
       System.out.println("There is no registered Account");
     } else {
-      System.out.println("No       AccountHolderName     AccountNumber     InitialBalance  CurrentlyAvailableBalance");
+      System.out.println("No   AccountHolderName   AccountNumber   InitialBalance     CurrentlyAvailableBalance");
       for (int i = 0; i < Acc.size(); ++i) {
         System.out.print((i + 1) + ".");
         Acc.get(i).displayInfo();
       }
+    }
+  }
+
+  private static int generateAccountNumber() {
+    Random rand = new Random();
+    int accountNumber;
+    boolean isUnique;
+
+    do {
+      // Generate a 6-digit number (100000 to 999999)
+      accountNumber = 100000 + rand.nextInt(900000);
+      isUnique = true;
+
+      // Check if this account number already exists
+      for (Account acc : Acc) {
+        if (acc.getAccNo() == accountNumber) {
+          isUnique = false;
+          break;
+        }
+      }
+    } while (!isUnique);
+
+    return accountNumber;
+  }
+
+  static void CreateNewAccount() {
+    Scanner s = new Scanner(System.in);
+    System.out.print("Enter Holder Name: ");
+    String Hname = s.nextLine();
+    if (Hname.length() < 4) {
+      System.out.println("The minimum length of your name should be greater than 4 characters. Try Again!");
+      return;
+
+    }
+    // Generate account number automatically
+    int AccNo = generateAccountNumber();
+    System.out.println("Your assigned account number is: " + AccNo);
+
+    System.out.print("Enter initial Balance: ");
+    double balance = s.nextDouble();
+
+    if (balance >= 50) {
+      Account account = new Account(Hname, AccNo, balance);
+      Acc.add(account);
+      System.out.println("Account Created Successfully");
+      System.out.println("Account Holder: " + Hname);
+      System.out.println("Account Number: " + AccNo);
+      System.out.println("Initial Balance: " + balance + " ETB");
+    } else if (balance > 0 && balance < 50) {
+      System.out.println("Please Enter a value above 50 ETBirr");
+    } else {
+      System.out.println("Initial balance cannot be negative!");
     }
   }
 
@@ -671,9 +675,9 @@ public class bankAccount {
 
   public static void TransferMoney() {
     Scanner sc = new Scanner(System.in);
-    double senderAcc, recipientAcc, amount;
+    double senderAcc, recipientAcc, amount = 0.0;
 
-    System.out.print("Enter Account Number: ");
+    System.out.print("Enter Your Account Number: ");
     senderAcc = sc.nextDouble();
     if (Acc.isEmpty()) {
       System.out.println("There is Registered Account in the System!!");
@@ -685,7 +689,7 @@ public class bankAccount {
         if (Acc.get(i).getAccNo() == (senderAcc)) {
           isFound = true;
 
-          System.out.print("Enter Account Number: ");
+          System.out.print("Enter Reciever Account Number: ");
           recipientAcc = sc.nextDouble();
           boolean isFound1 = false;
 
@@ -713,7 +717,7 @@ public class bankAccount {
             System.out.println("There is no Registerd Account By this  Account Number ");
           }
 
-          System.out.println("Account Deleted Successfully!! ");
+          System.out.println("Money Transfered Successfully!! ");
 
         }
 
@@ -780,6 +784,20 @@ public class bankAccount {
       System.out.println("There is Registered Account in the System!!");
       return;
     } else {
+
+      for (int i = 0; i < loans.size(); ++i) {
+        if (loans.get(i).getAccNo() == AccNo) {
+          if (loans.get(i).getRemainingAmount() != 0) {
+
+            System.out.println("You can't apply for another loan!!. First pay your remaining loan :"
+                + (loans.get(i).getRemainingAmount()) + "ETB");
+            return;
+
+          }
+
+        }
+
+      }
       boolean isFound = false;
       for (int i = 0; i < Acc.size(); ++i) {
         if (Acc.get(i).getAccNo() == (AccNo)) {
