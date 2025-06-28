@@ -1,4 +1,4 @@
-hi i'm getye and i changed this code on the main branch
+hi i'm getye and i changed this code on the getye's branch
 package bank;
 
 import java.io.*;
