@@ -133,7 +133,7 @@ class Loan implements Serializable {
   }
 }
 
-public class bankAccount {
+public class BankAccount1 {
   private static ArrayList<Account> Acc = new ArrayList<>();
   private static ArrayList<Loan> loans = new ArrayList<>();
 
@@ -515,10 +515,7 @@ public class bankAccount {
       for (int i = 0; i < Acc.size(); ++i) {
 
         if (Acc.get(i).getAccNo() == AccNo) {
-          System.out.println("Account Number : " + Acc.get(i).getAccNo());
-          System.out.println("Holder Name : " + Acc.get(i).getHname());
-          System.out.println("initail Balance : " + Acc.get(i).getBalance());
-          System.out.println("Currently Available Balance : " + Acc.get(i).getcurBalance());
+          Acc.get(i).displayInfo();
           isFound = true;
         }
       }
@@ -820,41 +817,38 @@ public class bankAccount {
             System.out.println("Please Try to loan a smaller amount");
             return;
           } else {
-            double interestRate = 0.07;
-            System.out.println(" Interest Rate ( 0.07 for 7%):");
-
-            System.out.println("Do you agree with the Interest Rate? ");
-            System.out.println("Enter 1.to continue and any key to cancel ");
-            int x;
-            x = sc.nextInt();
-            if (x == 1) {
-              int loanDuration = 0;
-              System.out.println("Enter Loan Duration (in months):");
-              try {
-                loanDuration = sc.nextInt();
-              } catch (InputMismatchException e) {
-                System.out.println("Invalid duration. Please enter a numeric value.");
-                sc.next();
-                return;
-              }
-              sc.nextLine();
-              if (loanDuration > 25) {
-                System.out.println("It is very long peroid of time ");
-                return;
-              }
-              Loan loan = new Loan(AccNo, loanAmount, interestRate, loanDuration);
-              loans.add(loan);
-              System.out.println("Loan applied successfully.");
-
-              for (int j = 0; j < loans.size(); ++j) {
-                if (Acc.get(i).getAccNo() == loans.get(j).getAccNo())
-                  Acc.get(i).setcurBalance(Acc.get(i).getcurBalance() + loanAmount);
-
-              }
-            } else {
-              System.out.println("Proccess Cancelled!");
+            double interestRate = 0;
+            System.out.println("Enter Interest Rate (e.g., 0.05 for 5%):");
+            try {
+              interestRate = sc.nextDouble();
+            } catch (InputMismatchException e) {
+              System.out.println("Invalid interest rate. Please enter a numeric value.");
+              sc.next();
               return;
             }
+            sc.nextLine();
+
+            int loanDuration = 0;
+            System.out.println("Enter Loan Duration (in months):");
+            try {
+              loanDuration = sc.nextInt();
+            } catch (InputMismatchException e) {
+              System.out.println("Invalid duration. Please enter a numeric value.");
+              sc.next();
+              return;
+            }
+            sc.nextLine();
+            if (loanDuration > 25) {
+              System.out.println("It is very long peroid of time ");
+              return;
+            }
+            Loan loan = new Loan(AccNo, loanAmount, interestRate, loanDuration);
+            loans.add(loan);
+            System.out.println("Loan applied successfully.");
+          }
+          for (int j = 0; j < loans.size(); ++j) {
+            if (Acc.get(i).getAccNo() == loans.get(j).getAccNo())
+              Acc.get(i).setcurBalance(Acc.get(i).getcurBalance() + loanAmount);
 
           }
 

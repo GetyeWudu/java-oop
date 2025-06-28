@@ -1,0 +1,788 @@
+package bank;
+
+import java.io.*;
+import java.util.ArrayList;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+class Account implements Serializable {
+    // [Previous Account class implementation remains the same]
+    // ...
+}
+
+class Loan implements Serializable {
+    // [Previous Loan class implementation remains the same]
+    // ...
+}
+
+public class bankAccount {
+    private static ArrayList<Account> Acc = new ArrayList<>();
+    private static ArrayList<Loan> loans = new ArrayList<>();
+
+    private static final String FILE_NAME = "accounts.dat";
+    private static final String LOANS_FILE_NAME = "loans.dat";
+    private static final String PASSWORD_FILE = "admin_password.dat";
+    private static String adminPassword = "admin123"; // Default password
+
+    public static void main(String args[]) {
+        loadAccounts();
+        loadLoans();
+        loadAdminPassword(); // Load saved password at startup
+
+        Scanner s = new Scanner(System.in);
+        while (true) {
+            System.out.println("\nBank Management System Menu:");
+            System.out.println("1. Create New Account");
+            System.out.println("2. Deposit Money");
+            System.out.println("3. Withdraw Money");
+            System.out.println("4. View One Account Details");
+            System.out.println("5. Transfer Money");
+            System.out.println("6. Search Account");
+            System.out.println("7. Delete Account");
+            System.out.println("8. Apply for Loan");
+            System.out.println("9. Make Loan Payment");
+            System.out.println("10. View Loan Details");
+            System.out.println("11. Admin Menu");
+            System.out.println("12. Save and Exit");
+
+            System.out.print("Enter your choice: ");
+            int choice = -1;
+            try {
+                choice = s.nextInt();
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input. Please enter a number between 1 and 12.");
+                s.next();
+                continue;
+            }
+            s.nextLine();
+
+            switch (choice) {
+                case 1: CreateNewAccount(); break;
+                case 2: depositMoney(); break;
+                case 3: withdrawMoney(); break;
+                case 4: viewOneAcccountDetail(); break;
+                case 5: TransferMoney(); break;
+                case 6: searchAccountMenu(); break;
+                case 7: deleteAccountMenu(); break;
+                case 8: applyForLoan(); break;
+                case 9: makeLoanPayment(); break;
+                case 10: viewLoanDetails(); break;
+                case 11: 
+                    if (authenticateAdmin()) {
+                        adminMenu();
+                    }
+                    break;
+                case 12:
+                    saveAccounts();
+                    saveLoans();
+                    saveAdminPassword();
+                    System.out.println("Data saved successfully. Exiting...");
+                    System.exit(0);
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+
+    /* ========== Password Management Methods ========== */
+
+    /**
+     * Loads the admin password from file
+     */
+    private static void loadAdminPassword() {
+        File file = new File(PASSWORD_FILE);
+        if (!file.exists()) {
+            System.out.println("No existing password file found. Using default password.");
+            return;
+        }
+
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+            adminPassword = (String) ois.readObject();
+            System.out.println("Admin password loaded successfully.");
+        } catch (IOException | ClassNotFoundException e) {
+            System.err.println("Error loading admin password: " + e.getMessage());
+            System.out.println("Using default password.");
+        }
+    }
+
+    /**
+     * Saves the admin password to file
+     */
+    private static void saveAdminPassword() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(PASSWORD_FILE))) {
+            oos.writeObject(adminPassword);
+            System.out.println("Admin password saved successfully.");
+        } catch (IOException e) {
+            System.err.println("Error saving admin password: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Authenticates admin access with password
+     * @return true if authentication successful, false otherwise
+     */
+    private static boolean authenticateAdmin() {
+        Scanner s = new Scanner(System.in);
+        System.out.print("Enter admin password: ");
+        String inputPassword = s.nextLine();
+        
+        if (inputPassword.equals(adminPassword)) {
+            return true;
+        } else {
+            System.out.println("Incorrect password. Access denied.");
+            return false;
+        }
+    }
+
+    /**
+     * Changes the admin password after verifying current password
+     */
+    private static void changeAdminPassword() {
+        Scanner s = new Scanner(System.in);
+        
+        // Verify current password first
+        System.out.print("Enter current admin password: ");
+        String currentPassword = s.nextLine();
+        
+        if (!currentPassword.equals(adminPassword)) {
+            System.out.println("Incorrect current password. Password not changed.");
+            return;
+        }
+        
+        // Get new password
+        System.out.print("Enter new admin password: ");
+        String newPassword1 = s.nextLine();
+        
+        System.out.print("Confirm new admin password: ");
+        String newPassword2 = s.nextLine();
+        
+        if (newPassword1.equals(newPassword2)) {
+            adminPassword = newPassword1;
+            saveAdminPassword();
+            System.out.println("Password changed successfully.");
+        } else {
+            System.out.println("Passwords do not match. Password not changed.");
+        }
+    }
+
+    /* ========== Enhanced Admin Menu ========== */
+
+    private static void adminMenu() {
+        Scanner s = new Scanner(System.in);
+        while (true) {
+            System.out.println("\nAdmin Menu:");
+            System.out.println("1. View All Registered Accounts");
+            System.out.println("2. View All Loan Histories");
+            System.out.println("3. Change Admin Password");
+            System.out.println("4. Return to Main Menu");
+
+            System.out.print("Enter your choice: ");
+            int choice = -1;
+            try {
+                choice = s.nextInt();
+            } catch (InputMismatchException e) {
+                System.out.println("Invalid input. Please enter a number between 1 and 4.");
+                s.next();
+                continue;
+            }
+            s.nextLine();
+
+            switch (choice) {
+                case 1:
+                    DisplayAllAccount();
+                    break;
+                case 2:
+                    displayAllLoans();
+                    break;
+                case 3:
+                    changeAdminPassword();
+                    break;
+                case 4:
+                    return;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+    }
+
+    /**
+     * Displays all loan histories in the system
+     */
+    private static void displayAllLoans() {
+        if (loans.isEmpty()) {
+            System.out.println("No loan histories found.");
+            return;
+        }
+
+        System.out.println("\nAll Loan Histories:");
+        for (Loan loan : loans) {
+            loan.displayInfo();
+            System.out.println("-----------------------");
+        }
+    }
+
+    /* ========== Rest of your existing methods remain unchanged ========== */
+    // [All other methods remain exactly the same as in your original code]
+    // CreateNewAccount(), DisplayAllAccount(), viewOneAcccountDetail(), etc.
+    // ...
+    private static void searchAccountMenu() {
+        Scanner s = new Scanner(System.in);
+        System.out.println("1. Search Account by Account Number");
+        System.out.println("2. Search Account by Holder Name");
+        int choice = s.nextInt();
+        if (choice == 1) {
+          SearchAccountByAccNumber();
+        } else if (choice == 2) {
+          SearchAccountByName();
+        } else {
+          System.out.println("Invalid Input");
+        }
+      }
+    
+      private static void adminMenu() {
+        Scanner s = new Scanner(System.in);
+        System.out.println("1. View All Registered  Account! ");
+        System.out.println("2. View All Loan Histories!");
+        int choice = s.nextInt();
+        if (choice == 1) {
+          DisplayAllAccount();
+        } else if (choice == 2) {
+          SearchAccountByName();
+        } else {
+          System.out.println("Invalid Input");
+        }
+      }
+    
+      private static void deleteAccountMenu() {
+        Scanner s = new Scanner(System.in);
+        System.out.println("1. Delete Account by Account Number");
+        System.out.println("2. Delete Account by Account Holder Name");
+        int choice = s.nextInt();
+        if (choice == 1) {
+          DeleteAccountByAccNumber();
+        } else if (choice == 2) {
+          DeleteAccountByAccName();
+        } else {
+          System.out.println("Invalid Input");
+        }
+      }
+    
+      private static void saveAccounts() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(FILE_NAME))) {
+          oos.writeObject(Acc);
+          System.out.println(Acc.size() + " accounts saved successfully.");
+        } catch (IOException e) {
+          System.err.println("Error saving accounts: " + e.getMessage());
+        }
+      }
+    
+      private static void saveLoans() {
+        try (ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream(LOANS_FILE_NAME))) {
+          oos.writeObject(loans);
+          System.out.println(loans.size() + " loans saved successfully.");
+        } catch (IOException e) {
+          System.err.println("Error saving loans: " + e.getMessage());
+        }
+      }
+    
+      private static void loadAccounts() {
+        File file = new File(FILE_NAME);
+        if (!file.exists()) {
+          System.out.println("No existing account data found. Starting with empty account list.");
+          Acc = new ArrayList<>();
+          return;
+        }
+    
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+          Acc = (ArrayList<Account>) ois.readObject();
+          System.out.println(Acc.size() + " accounts loaded successfully.");
+        } catch (IOException | ClassNotFoundException e) {
+          System.err.println("Error loading accounts: " + e.getMessage());
+          Acc = new ArrayList<>();
+        }
+      }
+    
+      private static void loadLoans() {
+        File file = new File(LOANS_FILE_NAME);
+        if (!file.exists()) {
+          System.out.println("No existing loan data found. Starting with empty loan list.");
+          loans = new ArrayList<>();
+          return;
+        }
+    
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(file))) {
+          loans = (ArrayList<Loan>) ois.readObject();
+          System.out.println(loans.size() + " loans loaded successfully.");
+        } catch (IOException | ClassNotFoundException e) {
+          System.err.println("Error loading loans: " + e.getMessage());
+          loans = new ArrayList<>();
+        }
+      }
+    
+      // [All other methods remain exactly the same as in your original code]
+      // CreateNewAccount(), DisplayAllAccount(), viewOneAcccountDetail(), etc.
+      // ...
+    
+      static void CreateNewAccount() {
+        Scanner s = new Scanner(System.in);
+        System.out.print("Enter Holder Name:");
+        String Hname = s.nextLine();
+    
+        System.out.print("Enter A six Digit Account Number:");
+        int AccNo = s.nextInt();
+        String ab = String.valueOf(AccNo);
+        if (ab.length() == 6) {
+          System.out.print("Enter initial Balance:");
+          double balance = s.nextDouble();
+          if (balance >= 50) {
+            Account account = new Account(Hname, AccNo, balance);
+            Acc.add(account);
+            System.out.println("Account Created Successfully");
+          } else if (balance > 0 && balance < 50) {
+            System.out.println("Please Enter a value above 50 ETBirr");
+          } else {
+            System.out.println("Initial balance cannot be negative!");
+          }
+        } else {
+          System.out.println("Invalid format! Try Again");
+        }
+      }
+    
+      static void DisplayAllAccount() {
+        if (Acc.isEmpty()) {
+          System.out.println("There is no registered Account");
+        } else {
+          System.out.println("No       AccountHolderName     AccountNumber     InitialBalance  CurrentlyAvailableBalance");
+          for (int i = 0; i < Acc.size(); ++i) {
+            System.out.print((i + 1) + ".");
+            Acc.get(i).displayInfo();
+          }
+        }
+      }
+    
+      
+      public static void viewOneAcccountDetail() {
+        Scanner sc = new Scanner(System.in);
+    
+        if (Acc.isEmpty()) {
+          System.out.println("There is No registerd account in the system");
+          return;
+        } else {
+          System.out.print("Enter Account Number :");
+          int AccNo = sc.nextInt();
+          boolean isFound = false;
+          for (int i = 0; i < Acc.size(); ++i) {
+    
+            if (Acc.get(i).getAccNo() == AccNo) {
+              Acc.get(i).displayInfo();
+              isFound = true;
+            }
+          }
+          if (!isFound) {
+            System.out.println("Wrong Account Number ");
+            return;
+          }
+        }
+      }
+    
+      static void SearchAccountByName() {
+        Scanner s = new Scanner((System.in));
+    
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          System.out.print("Enter Account Holder name :");
+          String Hname = s.nextLine();
+          boolean isFound = false;
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getHname().equals(Hname)) {
+              isFound = true;
+              System.out.println("Account Found ");
+              System.out.println("Holder Name :" + Acc.get(i).getHname());
+              System.out.println("Account Number :" + Acc.get(i).getAccNo());
+              System.out.println("Initial Balance :" + Acc.get((i)).getBalance());
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this  name ");
+          }
+        }
+    
+      }
+    
+      static void SearchAccountByAccNumber() {
+        Scanner s = new Scanner(System.in);
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          System.out.print("Enter Account Number :");
+          int AccNo = s.nextInt();
+          boolean isFound = false;
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getAccNo() == (AccNo)) {
+              isFound = true;
+              System.out.println("Account Found ");
+              System.out.println("Holder Name :" + Acc.get(i).getHname());
+              System.out.println("Account Number :" + Acc.get(i).getAccNo());
+              System.out.println("Initial Balance :" + Acc.get((i)).getBalance());
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this  Account Number ");
+          }
+        }
+      }
+    
+      static void DeleteAccountByAccName() {
+        Scanner s = new Scanner(System.in);
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          System.out.print("Enter Account Holder Name :");
+          String Hname = s.nextLine();
+          boolean isFound = false;
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getHname().equals(Hname)) {
+              isFound = true;
+              Acc.remove(i);
+              System.out.println("Account Deleted Successfully!! ");
+    
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this Name ");
+          }
+        }
+    
+      }
+    
+      static void DeleteAccountByAccNumber() {
+        Scanner s = new Scanner(System.in);
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          System.out.print("Enter Account Number :");
+          int AccNo = s.nextInt();
+          boolean isFound = false;
+    
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getAccNo() == (AccNo)) {
+              isFound = true;
+              Acc.remove(i);
+              System.out.println("Account Deleted Successfully!! ");
+    
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this  Account Number ");
+          }
+        }
+    
+      }
+    
+      public static void depositMoney() {
+        Scanner s = new Scanner(System.in);
+        System.out.print("Enter Account Number :");
+        int AccNo = s.nextInt();
+        if (Acc.isEmpty()) {
+          System.out.println("There is no registered account!!");
+          return;
+        }
+    
+        boolean accountFound = false;
+        Scanner sc = new Scanner(System.in);
+    
+        try {
+          for (int i = 0; i < Acc.size(); i++) {
+            if (Acc.get(i).getAccNo() == AccNo) {
+              accountFound = true;
+              System.out.print("Enter Deposit Amount: ");
+              double amount = sc.nextDouble();
+    
+              if (amount <= 0) {
+                System.out.println("Deposit amount must be positive!");
+                return;
+              }
+    
+              // Assuming setCurrentBalance adds to existing balance
+              Acc.get(i).setcurBalance(Acc.get(i).getcurBalance() + amount);
+              System.out.println("$" + amount + " deposited successfully.");
+              System.out.println("New balance: $" + Acc.get(i).getcurBalance());
+              break;
+            }
+          }
+    
+          if (!accountFound) {
+            System.out.println("Account not found!");
+          }
+        } finally {
+          // sc.close(); // Ensure scanner is closed
+        }
+      }
+    
+      public static void TransferMoney() {
+        Scanner sc = new Scanner(System.in);
+        double senderAcc, recipientAcc, amount;
+    
+        System.out.print("Enter Account Number: ");
+        senderAcc = sc.nextDouble();
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          boolean isFound = false;
+    
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getAccNo() == (senderAcc)) {
+              isFound = true;
+    
+              System.out.print("Enter Account Number: ");
+              recipientAcc = sc.nextDouble();
+              boolean isFound1 = false;
+    
+              for (int j = 0; j < Acc.size(); ++j) {
+                if (Acc.get(j).getAccNo() == (recipientAcc)) {
+                  isFound1 = true;
+                  System.out.println("Enter Amount to be transfered!");
+                  amount = sc.nextDouble();
+                  if (Acc.get(i).getcurBalance() >= amount + 500) {
+                    double AvaliableBalance = Acc.get(i).getcurBalance();
+                    AvaliableBalance -= amount;
+                    Acc.get(i).setcurBalance(AvaliableBalance);
+                    Acc.get(j).setcurBalance(Acc.get(j).getcurBalance() + amount);
+                  }
+    
+                  else {
+    
+                  }
+    
+                }
+    
+              }
+              if (!isFound1) {
+    
+                System.out.println("There is no Registerd Account By this  Account Number ");
+              }
+    
+              System.out.println("Account Deleted Successfully!! ");
+    
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this  Account Number ");
+            return;
+          }
+    
+        }
+      }
+    
+      public static void withdrawMoney() {
+    
+        if (Acc.isEmpty()) {
+          System.out.println("There is No Registered Account in the System!!");
+          return;
+        } else {
+          boolean isFound = false;
+          Scanner sc = new Scanner(System.in);
+          System.out.print("Enter Account Number :");
+          int AccNo = sc.nextInt();
+    
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getAccNo() == (AccNo)) {
+              isFound = true;
+              System.out.print("Enter Amount to be Withdrawal :");
+              double amount = sc.nextDouble();
+              if (amount > 100) {
+                if (Acc.get(i).getcurBalance() > amount + 500) {// 500 should be the minimum available balance in every
+                                                                // account
+                  Acc.get(i).setcurBalance((Acc.get(i).getcurBalance() - amount));
+                  System.out.println(amount + " Successfully withdrawal from your account  ");
+                  System.out.println("Your current Balance is :" + Acc.get(i).getcurBalance());
+    
+                } else {
+                  System.out.println("Your current Balance insufficient to withdraw :" + amount);
+                }
+    
+              } else if (0 < amount && amount <= 100) {
+                System.out.println("Below the minimum pop up!");
+              } else {
+                System.out.println("Negative amount can not be WithDarwal!!");
+              }
+    
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("Wrong Account Number ");
+          }
+        }
+    
+      }
+    
+      private static void applyForLoan() {
+        Scanner sc = new Scanner(System.in);
+        System.out.println("Enter Account Number:");
+        int AccNo = sc.nextInt();
+    
+        if (Acc.isEmpty()) {
+          System.out.println("There is Registered Account in the System!!");
+          return;
+        } else {
+          boolean isFound = false;
+          for (int i = 0; i < Acc.size(); ++i) {
+            if (Acc.get(i).getAccNo() == (AccNo)) {
+              isFound = true;
+              double loanAmount = 0;
+              System.out.println("Enter Loan Amount:");
+              try {
+                loanAmount = sc.nextDouble();
+              } catch (InputMismatchException e) {
+                System.out.println("Invalid amount. Please enter a numeric value.");
+                sc.next();
+                return;
+              }
+              sc.nextLine();
+              if (Acc.get(i).getcurBalance() * 2 < loanAmount) {
+                System.out.println("You current balance is very small to loan :" + loanAmount);
+                System.out.println("Please Try to loan a smaller amount");
+                return;
+              } else {
+                double interestRate = 0;
+                System.out.println("Enter Interest Rate (e.g., 0.05 for 5%):");
+                try {
+                  interestRate = sc.nextDouble();
+                } catch (InputMismatchException e) {
+                  System.out.println("Invalid interest rate. Please enter a numeric value.");
+                  sc.next();
+                  return;
+                }
+                sc.nextLine();
+    
+                int loanDuration = 0;
+                System.out.println("Enter Loan Duration (in months):");
+                try {
+                  loanDuration = sc.nextInt();
+                } catch (InputMismatchException e) {
+                  System.out.println("Invalid duration. Please enter a numeric value.");
+                  sc.next();
+                  return;
+                }
+                sc.nextLine();
+                if (loanDuration > 25) {
+                  System.out.println("It is very long peroid of time ");
+                  return;
+                }
+                Loan loan = new Loan(AccNo, loanAmount, interestRate, loanDuration);
+                loans.add(loan);
+                System.out.println("Loan applied successfully.");
+              }
+              for (int j = 0; j < loans.size(); ++j) {
+                if (Acc.get(i).getAccNo() == loans.get(j).getAccNo())
+                  Acc.get(i).setcurBalance(Acc.get(i).getcurBalance() + loanAmount);
+    
+              }
+    
+            }
+    
+          }
+          if (!isFound) {
+    
+            System.out.println("There is no Registerd Account By this  Account Number ");
+          }
+        }
+    
+      }
+    
+      public static void viewLoanDetails() {
+        Scanner sc = new Scanner(System.in);
+        if (loans.isEmpty()) {
+          System.out.println("There is no loan History!!");
+          return;
+    
+        } else {
+          boolean isFound = false;
+          System.out.println("Enter Account Number:");
+          int AccNo = sc.nextInt();
+          for (int i = 0; i < loans.size(); ++i) {
+            if (loans.get(i).getAccNo() == AccNo) {
+              isFound = true;
+    
+              loans.get(i).displayInfo();
+    
+            }
+    
+          }
+          if (!isFound) {
+            System.out.println("There is no loan history in this account number!!");
+          }
+        }
+    
+      }
+    
+      private static void makeLoanPayment() {
+        Scanner sc = new Scanner(System.in);
+        System.out.print("Enter Account Number:");
+        int AccNo = sc.nextInt();
+    
+        if (loans.isEmpty()) {
+          System.out.println("There is no loan Currently in the System");
+          return;
+        } else {
+          boolean isFound = false;
+    
+          for (int j = 0; j < loans.size(); ++j) {
+            if (loans.get(j).getAccNo() == AccNo) {
+              isFound = true;
+              System.out.println("Enter Amount To pay your loan ");
+              double paymentAmount = sc.nextDouble();
+              if (paymentAmount > 0) {
+                if (loans.get(j).getRemainingAmount() > paymentAmount) {
+                  loans.get(j).setRemainingAmount(loans.get(j).getRemainingAmount() - paymentAmount);
+                  System.out.println("your remaining amount from your loan is :" + loans.get(j).getRemainingAmount());
+                } else if (loans.get(j).getRemainingAmount() == paymentAmount) {
+                  loans.get(j).setRemainingAmount(0.0);
+                  System.out.println("You have successfully paid your loan. You can Aplay for another loan");
+    
+                } else if (loans.get(j).getRemainingAmount() < paymentAmount) {
+    
+                  double profit = paymentAmount - loans.get(j).getRemainingAmount();
+                  loans.get(j).setRemainingAmount(0.0);
+                  for (int i = 0; i < Acc.size(); ++i) {
+                    if (Acc.get(i).getAccNo() == AccNo) {
+                      Acc.get(i).setcurBalance(profit);
+                    }
+                  }
+    
+                  System.out.println("You have successfully paid your loan. You can Aplay for another loan");
+                  System.out.println(profit + " Transfered to your account");
+                }
+              } else {
+                System.out.println("invalid input payment loan can not be negative or zero");
+                return;
+              }
+            }
+          }
+    
+          if (!isFound) {
+            System.out.println("Wrong Account Number");
+            return;
+          }
+        }
+    
+      }
+}
